@@ -15,3 +15,14 @@ CREATE TABLE customers(
   name text NOT NULL
 );
 ```
+
+## Usage
+
+`nano()` takes four arguments:
+
+- `prefix`: The prefix to use for the id. Defaults to `''`.
+- `size`: The size of the id. Defaults to `21`. Note: The size does not include the prefix.
+- `alphabet`: The alphabet to use for the id. Defaults to `'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-'`.
+- `additionalBytesFactor`.
+
+For the most part, only the first two arguments are needed. The `alphabet` and `additionalBytesFactor` are only needed if you want to change the default values.
