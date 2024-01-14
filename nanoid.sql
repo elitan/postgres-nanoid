@@ -32,7 +32,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DROP FUNCTION IF EXISTS nanoid(int, text, float, text);
 
-CREATE OR REPLACE FUNCTION nanoid(prefix text DEFAULT '', size int DEFAULT 21, alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', additionalBytesFactor float DEFAULT 1.6)
+CREATE OR REPLACE FUNCTION nanoid(prefix text DEFAULT '', size int DEFAULT 21, alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', additionalBytesFactor float DEFAULT 1.02)
     RETURNS text
     LANGUAGE plpgsql
     VOLATILE LEAKPROOF PARALLEL SAFE
