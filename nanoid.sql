@@ -43,7 +43,8 @@ DECLARE
     mask int := 63;
     step int := 34;
     finalId text;
-    -- Variable to hold the final ID with prefix
+    adjustedSize int;
+    -- Variable for the adjusted size excluding the prefix length
 BEGIN
     IF size IS NULL OR size < 1 THEN
         RAISE EXCEPTION 'The size must be defined and greater than 0!';
@@ -54,15 +55,19 @@ BEGIN
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
         RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
     END IF;
+    -- Adjust the size to exclude the prefix length
+    adjustedSize := size - length(prefix);
+    IF adjustedSize < 1 THEN
+        RAISE EXCEPTION 'The size including the prefix must be greater than 0!';
+    END IF;
     alphabetArray := regexp_split_to_array(alphabet, '');
     alphabetLength := array_length(alphabetArray, 1);
     mask :=(2 << cast(floor(log(alphabetLength - 1) / log(2)) AS int)) - 1;
-    step := cast(ceil(additionalBytesFactor * mask * size / alphabetLength) AS int);
+    step := cast(ceil(additionalBytesFactor * mask * adjustedSize / alphabetLength) AS int);
     IF step > 1024 THEN
         step := 1024;
     END IF;
-    finalId := prefix || nanoid_optimized(size, alphabet, mask, step);
-    -- Prepend the prefix
+    finalId := prefix || nanoid_optimized(adjustedSize, alphabet, mask, step);
     RETURN finalId;
 END
 $$;
