@@ -2,7 +2,7 @@
 
 ## Get started
 
-Execute the code in [`nanoid.sql`](blob/main/nanoid.sql). This will create the `nanoid()` function in Postgres for your to use.
+Execute the code in [`nanoid.sql`](nanoid.sql). This will create the `nanoid()` function in Postgres for your to use.
 
 Use the `nanoid()` function wherever you want a nano id.
 
