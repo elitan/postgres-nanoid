@@ -2,9 +2,11 @@
 
 ## Get started
 
-Execute the code in [`nanoid.sql`](nanoid.sql) in your Postgres database. This will create the `nanoid()` function in Postgres that you can use.
+Execute the SQL Code in [`nanoid.sql`](nanoid.sql) in your Postgres database. Doing so will crete the `nanoid()` function in Postgres.
 
-Use the `nanoid()` function wherever you want a nano id.
+Next, use the `nanoid()` function wherever you want a Nano ID.
+
+It's possible to add a prefix to the Nano ID to get Stripe-like IDs (.e.g. `cus_1Hh9jz4D8JZKw5JX`).
 
 ## Examples
 
@@ -29,7 +31,7 @@ SELECT nanoid('cus_', 4);
 -- CONTEXT:  PL/pgSQL function nanoid(text,integer,text,double precision) line 23 at RAISE
 ```
 
-Create a table and auto generate a nano id for each row:
+Create a table and auto generate a Nano ID for each row:
 
 ```sql
 CREATE TABLE customers(
@@ -43,7 +45,7 @@ CREATE TABLE customers(
 
 `nano()` takes four arguments:
 
-- `prefix`: The prefix to use for the id. Defaults to `''` (empty string).
-- `size`: The size of the id (including the prefix). Defaults to `21`.
-- `alphabet`: The alphabet to use to generate the id. Defaults to `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`.
+- `prefix`: The prefix to use for the ID. Defaults to `''` (empty string).
+- `size`: The size of the ID (including the prefix). Defaults to `21`.
+- `alphabet`: The alphabet to use to generate the ID. Defaults to `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`.
 - `additionalBytesFactor`: A factor determining the randomness quality of the generated ID by adjusting the number of random bytes used. A higher value increases randomness at the cost of performance. Default value is 1.6.
