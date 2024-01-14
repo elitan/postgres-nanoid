@@ -1,4 +1,4 @@
-# pg-nanoid
+# Postgres Nano ID
 
 A tiny, secure, URL-friendly, unique string ID generator for Postgres with prefix support (e.g. `cus_1Hh9jz4D8JZKw5JX`).
 
@@ -40,7 +40,7 @@ Create a table and auto generate a Nano ID for each row:
 ```sql
 CREATE TABLE customers(
   id serial PRIMARY KEY,
-  public_id text NOT NULL UNIQUE CHECK (public_id LIKE 'cus_%') DEFAULT nanoid('cus_', 8),
+  public_id text NOT NULL UNIQUE CHECK (public_id LIKE 'cus_%') DEFAULT nanoid('cus_'),
   name text NOT NULL
 );
 ```
