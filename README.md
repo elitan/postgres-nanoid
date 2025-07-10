@@ -336,10 +336,4 @@ make psql                 # Connect and try it
 
 ---
 
-<div align="center">
-
 **Made your IDs better?** Give us a ⭐ on GitHub!
-
-[🚀 **Get Started**](#try-it-now-30-seconds) • [📖 **API Reference**](#api) • [🏆 **Performance**](#performance)
-
-</div>
