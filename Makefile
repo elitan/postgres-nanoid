@@ -12,6 +12,7 @@ help:
 	@echo "  make test-basic - Run basic functionality tests"
 	@echo "  make test-bench - Run performance benchmarks"
 	@echo "  make test-sort  - Run legacy sortability comparison"
+	@echo "  make test-params- Run parameter tests (alphabet, additionalBytesFactor)"
 	@echo "  make test-all   - Run all tests"
 	@echo "  make clean      - Remove containers and volumes"
 
@@ -53,6 +54,9 @@ test-bench:
 
 test-sort:
 	./scripts/test.sh sortability
+
+test-params:
+	./scripts/test.sh parameters
 
 test-all:
 	./scripts/test.sh all

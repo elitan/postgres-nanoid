@@ -6,6 +6,7 @@ if [ $# -eq 0 ]; then
     echo "  basic       - Basic functionality tests"
     echo "  benchmark   - Performance benchmarks"
     echo "  sortability - Legacy sortability comparison"
+    echo "  parameters  - Custom alphabet and additionalBytesFactor tests"
     echo "  all         - Run all tests"
     echo ""
     echo "Usage: $0 <test_name>"
@@ -27,6 +28,10 @@ case $TEST_NAME in
         echo "Running legacy sortability comparison..."
         docker-compose exec postgres psql -U postgres -d nanoid_test -f /tests/sortability_test.sql
         ;;
+    parameters)
+        echo "Running parameter tests..."
+        docker-compose exec postgres psql -U postgres -d nanoid_test -f /tests/parameter_test.sql
+        ;;
     all)
         echo "Running all tests..."
         echo "=== BASIC TESTS ==="
@@ -34,6 +39,9 @@ case $TEST_NAME in
         echo ""
         echo "=== LEGACY SORTABILITY COMPARISON ==="
         docker-compose exec postgres psql -U postgres -d nanoid_test -f /tests/sortability_test.sql
+        echo ""
+        echo "=== PARAMETER TESTS ==="
+        docker-compose exec postgres psql -U postgres -d nanoid_test -f /tests/parameter_test.sql
         echo ""
         echo "=== BENCHMARK TESTS ==="
         docker-compose exec postgres psql -U postgres -d nanoid_test -f /tests/benchmark.sql
