@@ -1,16 +1,10 @@
 # PostgreSQL Nanoid
 
-> **Stop using auto-increment IDs that leak your business data.  
-> Stop using UUIDs that are ugly, long, and unsortable.  
-> Use nanoids: secure, compact, sortable, and beautiful.**
-
-<div align="center">
-
-![Nanoid](https://img.shields.io/badge/Nanoid-cus__0uQzNrIBqK9ayvN1T-brightgreen?style=for-the-badge)
-
 **84,000+ IDs/second** • **Time-ordered** • **URL-safe** • **Collision-resistant**
 
-</div>
+😔 Stop using auto-increment IDs that leak your business data.  
+😔 Stop using UUIDs that are ugly, long, and unsortable.  
+🤩 Use nanoids: secure, compact, sortable, and beautiful.
 
 ## ⚡ Try It Now (30 seconds)
 
