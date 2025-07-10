@@ -2,9 +2,9 @@
 
 **84,000+ IDs/second** • **Time-ordered** • **URL-safe** • **Collision-resistant**
 
-😔 Stop using auto-increment IDs that leak your business data.  
-😔 Stop using UUIDs that are ugly, long, and unsortable.  
-🤩 Use nanoids: secure, compact, sortable, and beautiful.
+❌ Stop using auto-increment IDs that leak your business data.  
+❌ Stop using UUIDs that are ugly, long, and unsortable.  
+✅ Use nanoids: secure, compact, sortable, and beautiful.
 
 ## ⚡ Try It Now (30 seconds)
 
