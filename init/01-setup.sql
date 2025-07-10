@@ -1,19 +1,7 @@
-/*
- * Postgres Nano ID - Time-ordered, sortable unique identifiers
- * 
- * A PostgreSQL implementation of sortable nanoids that maintain lexicographic 
- * time ordering while preserving the visual characteristics of traditional nanoids.
- * 
- * Features:
- * - Lexicographically sortable by creation time
- * - URL-safe characters using nanoid alphabet
- * - Prefix support (e.g., 'cus_', 'ord_')
- * - Cryptographically secure random component
- * - High performance optimized for batch generation
- * 
- * Inspired by nanoid-postgres (https://github.com/viascom/nanoid-postgres)
- * and the broader nanoid ecosystem.
- */
+-- Initialize the nanoid function
+-- This runs automatically when the container starts
+
+-- Create the pgcrypto extension
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Drop existing functions to ensure clean state
@@ -173,3 +161,15 @@ EXCEPTION
         RAISE EXCEPTION 'Invalid nanoid format or timestamp extraction failed: %', SQLERRM;
 END
 $$;
+
+-- Create a test table for demonstrations
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    public_id TEXT NOT NULL UNIQUE CHECK (public_id LIKE 'cus_%') DEFAULT nanoid('cus_'),
+    name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Test that everything works
+SELECT 'Database initialized successfully. Testing nanoid function:' as status;
+SELECT nanoid('test_') as sample_nanoid;
