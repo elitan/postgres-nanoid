@@ -22,19 +22,19 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 3. Generate beautiful IDs
 SELECT nanoid('cus_');    -- cus_0uQzNrIBqK9ayvN1T
-SELECT nanoid('ord_');    -- ord_0uQzNrIEg13LGTj4c  
+SELECT nanoid('ord_');    -- ord_0uQzNrIEg13LGTj4c
 SELECT nanoid('user_');   -- user_0uQzNrIEutvmf1aS
 ```
 
 ## 🎯 Why Nanoids?
 
-| Problem | Auto-increment | UUID | **Nanoid** |
-|---------|----------------|------|------------|
-| **Leaks business data** | ❌ Reveals count | ✅ Secure | ✅ Secure |
-| **Length** | ❌ Predictable | ❌ 36 chars | ✅ 21 chars |
-| **Sortable by time** | ⚠️ Single DB only | ❌ Random | ✅ Lexicographic |
-| **URL-friendly** | ✅ Yes | ❌ Has dashes | ✅ Clean |
-| **Performance** | ✅ Fast | ⚠️ Slower | ✅ Fast |
+| Problem                 | Auto-increment    | UUID          | **Nanoid**       |
+| ----------------------- | ----------------- | ------------- | ---------------- |
+| **Leaks business data** | ❌ Reveals count  | ✅ Secure     | ✅ Secure        |
+| **Length**              | ❌ Predictable    | ❌ 36 chars   | ✅ 21 chars      |
+| **Sortable by time**    | ⚠️ Single DB only | ❌ Random     | ✅ Lexicographic |
+| **URL-friendly**        | ✅ Yes            | ❌ Has dashes | ✅ Clean         |
+| **Performance**         | ✅ Fast           | ⚠️ Slower     | ✅ Fast          |
 
 ## 🚀 Performance
 
@@ -45,6 +45,7 @@ SELECT nanoid('user_') FROM generate_series(1, 100000); -- 1.18s = 84,700 IDs/se
 ```
 
 **Production ready:**
+
 - ⚡ **84,000+ IDs/second** in batch operations
 - 🏃 **80,000+ inserts/second** with defaults
 - ⏰ **Time-ordered** - automatic chronological sorting
@@ -57,12 +58,13 @@ SELECT nanoid('user_') FROM generate_series(1, 100000); -- 1.18s = 84,700 IDs/se
 f47ac10b-58cc-4372-a567-0e02b2c3d479  -- 😵 36 chars, random order
 2514e1ae-3ab3-431e-aa45-225d70d89f61  -- 🤷 Which was created first?
 
--- Your new nanoids  
+-- Your new nanoids
 cus_0uQzNrIBqK9ayvN1T  -- 😍 21 chars, clean prefix
 ord_0uQzNrIEg13LGTj4c  -- ⏰ Clearly created after customer
 ```
 
 **Automatic time-ordering:**
+
 ```sql
 -- Generate over time - naturally sorted!
 WITH orders AS (
@@ -89,9 +91,10 @@ SELECT public_id, name FROM customers ORDER BY public_id;
 ```
 
 ### Production Validation
+
 ✅ **Collision resistant** - 2×10¹⁴ years to 1% probability at 1000 IDs/hour  
 ✅ **Scale tested** - Millions of records, faster than UUIDs  
-✅ **Index efficient** - Time-ordered = better B-tree locality  
+✅ **Index efficient** - Time-ordered = better B-tree locality
 
 ## 📖 API
 
@@ -116,13 +119,13 @@ SELECT nanoid_extract_timestamp('cus_0uQzNrIBqK9ayvN1T', 4);
 ```sql
 -- Multiple entity types
 SELECT nanoid('cus_');  -- Customer
-SELECT nanoid('ord_');  -- Order  
+SELECT nanoid('ord_');  -- Order
 SELECT nanoid('inv_');  -- Invoice
 
 -- Database constraints
 CREATE TABLE orders (
-    public_id TEXT NOT NULL UNIQUE 
-        CHECK (public_id ~ '^ord_[0-9a-zA-Z]{17}$') 
+    public_id TEXT NOT NULL UNIQUE
+        CHECK (public_id ~ '^ord_[0-9a-zA-Z]{17}$')
         DEFAULT nanoid('ord_'),
     customer_id TEXT CHECK (customer_id ~ '^cus_[0-9a-zA-Z]{17}$')
 );
@@ -139,12 +142,14 @@ INSERT INTO products (public_id, name) SELECT id, name FROM batch_ids;
 ## 🤔 When to Use
 
 ### ✅ Perfect for:
+
 - **Public-facing IDs** (APIs, URLs, customer references)
-- **Multi-tenant applications** 
+- **Multi-tenant applications**
 - **Distributed systems** (no coordination needed)
 - **Time-sensitive data** (natural chronological sorting)
 
 ### ⚠️ Consider alternatives for:
+
 - **Internal foreign keys** (integers might be faster)
 - **Legacy system integration** (if systems expect UUIDs)
 
@@ -196,9 +201,9 @@ $$;
 
 -- Main nanoid function with inline timestamp encoding
 CREATE OR REPLACE FUNCTION nanoid(
-    prefix text DEFAULT '', 
-    size int DEFAULT 21, 
-    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
+    prefix text DEFAULT '',
+    size int DEFAULT 21,
+    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
     additionalBytesFactor float DEFAULT 1.02
 )
     RETURNS text
@@ -228,13 +233,13 @@ BEGIN
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
         RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
     END IF;
-    
+
     -- Get current timestamp and encode using nanoid alphabet (inline for simplicity)
     timestamp_ms := extract(epoch from clock_timestamp()) * 1000;
     alphabetArray := regexp_split_to_array(alphabet, '');
     alphabetLength := array_length(alphabetArray, 1);
     temp_ts := timestamp_ms;
-    
+
     -- Handle zero case
     IF temp_ts = 0 THEN
         timestamp_encoded := alphabetArray[1];
@@ -246,39 +251,39 @@ BEGIN
             temp_ts := temp_ts / alphabetLength;
         END LOOP;
     END IF;
-    
+
     -- Pad to 8 characters for consistent lexicographic sorting
     WHILE length(timestamp_encoded) < 8 LOOP
         timestamp_encoded := alphabetArray[1] || timestamp_encoded;
     END LOOP;
-    
-    -- Calculate remaining size for random part  
+
+    -- Calculate remaining size for random part
     random_size := size - length(prefix) - 8; -- 8 = timestamp length
-    
+
     IF random_size < 1 THEN
         RAISE EXCEPTION 'The size including prefix and timestamp must leave room for random component! Need at least % characters.', length(prefix) + 9;
     END IF;
-    
+
     -- Generate random part using optimized function
     mask := (2 << cast(floor(log(alphabetLength - 1) / log(2)) AS int)) - 1;
     step := cast(ceil(additionalBytesFactor * mask * random_size / alphabetLength) AS int);
-    
+
     IF step > 1024 THEN
         step := 1024;
     END IF;
-    
+
     random_part := nanoid_optimized(random_size, alphabet, mask, step);
-    
+
     -- Combine: prefix + timestamp + random
     finalId := prefix || timestamp_encoded || random_part;
-    
+
     RETURN finalId;
 END
 $$;
 
 -- Helper function to extract timestamp from nanoid (useful for debugging/analysis)
 CREATE OR REPLACE FUNCTION nanoid_extract_timestamp(
-    nanoid_value text, 
+    nanoid_value text,
     prefix_length int DEFAULT 0,
     alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 )
@@ -298,7 +303,7 @@ BEGIN
     timestamp_encoded := substring(nanoid_value, prefix_length + 1, 8);
     alphabetArray := regexp_split_to_array(alphabet, '');
     alphabetLength := array_length(alphabetArray, 1);
-    
+
     -- Decode from base using nanoid alphabet (inline for simplicity)
     FOR i IN 1..length(timestamp_encoded) LOOP
         char_pos := array_position(alphabetArray, substring(timestamp_encoded, i, 1));
@@ -307,7 +312,7 @@ BEGIN
         END IF;
         timestamp_ms := timestamp_ms * alphabetLength + (char_pos - 1);
     END LOOP;
-    
+
     -- Convert to timestamp
     RETURN to_timestamp(timestamp_ms / 1000.0);
 EXCEPTION
