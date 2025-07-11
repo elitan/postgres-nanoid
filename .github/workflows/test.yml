@@ -1,0 +1,121 @@
+name: Test PostgreSQL Nanoid Functions
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: nanoid_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+    
+    - name: Load nanoid functions
+      run: |
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -f nanoid.sql
+      
+    - name: Create test table
+      run: |
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -c "
+        CREATE TABLE IF NOT EXISTS customers (
+            id SERIAL PRIMARY KEY,
+            public_id TEXT NOT NULL UNIQUE DEFAULT nanoid('cus_'),
+            name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        );"
+    
+    - name: Run basic functionality tests
+      run: |
+        echo "=== Running Basic Tests ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -f tests/basic_test.sql
+    
+    - name: Run dual function comprehensive tests
+      run: |
+        echo "=== Running Dual Function Tests ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -f tests/dual_function_test.sql
+    
+    - name: Run sortable function tests
+      run: |
+        echo "=== Running Sortable Function Tests ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -f tests/sortable_test.sql
+    
+    - name: Run parameter tests
+      run: |
+        echo "=== Running Parameter Tests ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -f tests/parameter_test.sql
+    
+    - name: Run performance benchmarks
+      run: |
+        echo "=== Running Performance Benchmarks ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -f tests/benchmark.sql
+    
+    - name: Test function security characteristics
+      run: |
+        echo "=== Testing Security Characteristics ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -c "
+        -- Test that regular nanoid() produces random order
+        WITH test_randoms AS (
+          SELECT nanoid('test_') as id, generate_series as seq 
+          FROM generate_series(1, 10)
+        )
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN LAG(id) OVER (ORDER BY seq) IS NULL OR LAG(id) OVER (ORDER BY seq) > id THEN 1 END) as non_ordered
+        FROM test_randoms;
+        
+        -- Test that sortable nanoid() produces time-ordered results
+        WITH test_sortable AS (
+          SELECT nanoid_sortable('sort_') as id, pg_sleep(0.001), generate_series as seq
+          FROM generate_series(1, 5)
+        )
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN LAG(id) OVER (ORDER BY seq) IS NULL OR LAG(id) OVER (ORDER BY seq) < id THEN 1 END) as correctly_sorted
+        FROM test_sortable;
+        "
+    
+    - name: Verify function availability
+      run: |
+        echo "=== Verifying Function Availability ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -c "
+        SELECT proname, pronargs 
+        FROM pg_proc 
+        WHERE proname LIKE 'nanoid%' 
+        ORDER BY proname;
+        "
+    
+    - name: Test large batch performance
+      run: |
+        echo "=== Testing Large Batch Performance ==="
+        PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -c "
+        \timing on
+        SELECT COUNT(*) FROM (SELECT nanoid('perf_') FROM generate_series(1, 10000)) t;
+        SELECT COUNT(*) FROM (SELECT nanoid_sortable('perf_') FROM generate_series(1, 10000)) t;
+        \timing off
+        "
