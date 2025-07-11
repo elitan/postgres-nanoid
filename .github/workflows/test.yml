@@ -83,21 +83,33 @@ jobs:
         WITH test_randoms AS (
           SELECT nanoid('test_') as id, generate_series as seq 
           FROM generate_series(1, 10)
+        ),
+        ordered_check AS (
+          SELECT 
+            id,
+            LAG(id) OVER (ORDER BY seq) < id as is_ordered
+          FROM test_randoms
         )
         SELECT 
           COUNT(*) as total,
-          COUNT(CASE WHEN LAG(id) OVER (ORDER BY seq) IS NULL OR LAG(id) OVER (ORDER BY seq) > id THEN 1 END) as non_ordered
-        FROM test_randoms;
+          SUM(CASE WHEN is_ordered IS NULL OR NOT is_ordered THEN 1 ELSE 0 END) as non_ordered
+        FROM ordered_check;
         
-        -- Test that sortable nanoid() produces time-ordered results
+        -- Test that sortable nanoid() produces time-ordered results  
         WITH test_sortable AS (
           SELECT nanoid_sortable('sort_') as id, pg_sleep(0.001), generate_series as seq
           FROM generate_series(1, 5)
+        ),
+        sortable_check AS (
+          SELECT
+            id,
+            LAG(id) OVER (ORDER BY seq) < id as is_ordered
+          FROM test_sortable
         )
         SELECT 
           COUNT(*) as total,
-          COUNT(CASE WHEN LAG(id) OVER (ORDER BY seq) IS NULL OR LAG(id) OVER (ORDER BY seq) < id THEN 1 END) as correctly_sorted
-        FROM test_sortable;
+          SUM(CASE WHEN is_ordered IS NULL OR is_ordered THEN 1 ELSE 0 END) as correctly_sorted
+        FROM sortable_check;
         "
     
     - name: Verify function availability
