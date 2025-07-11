@@ -1,7 +1,10 @@
 -- Test sortable nanoid functionality
+-- WARNING: nanoid_sortable() embeds timestamps which can leak business intelligence.
+-- Use only when time-ordering is essential and privacy trade-offs are acceptable.
 -- Run with: \i /tests/sortable_test.sql
 
 \echo '=== Sortable Nanoid Tests ==='
+\echo 'WARNING: These tests use nanoid_sortable() which embeds timing information.'
 \echo ''
 
 -- Test 1: Basic sortable nanoid generation
@@ -42,14 +45,17 @@ FROM sortable_test
 ORDER BY created_at;
 
 -- Summary of sortability test
-WITH sortability_check AS (
+WITH ordered_check AS (
+    SELECT 
+        nanoid_value,
+        LAG(nanoid_value) OVER (ORDER BY created_at) < nanoid_value as is_ordered
+    FROM sortable_test
+),
+sortability_check AS (
     SELECT 
         COUNT(*) as total_records,
-        COUNT(CASE 
-            WHEN LAG(nanoid_value) OVER (ORDER BY created_at) IS NULL THEN 1
-            WHEN LAG(nanoid_value) OVER (ORDER BY created_at) < nanoid_value THEN 1 
-        END) as correctly_sorted
-    FROM sortable_test
+        SUM(CASE WHEN is_ordered IS NULL OR is_ordered THEN 1 ELSE 0 END) as correctly_sorted
+    FROM ordered_check
 )
 SELECT 
     total_records,
@@ -145,6 +151,9 @@ SELECT
 \echo '=== Sortable Nanoid Tests Complete ==='
 \echo 'Key features:'
 \echo '- Lexicographically sortable by creation time'
-\echo '- 12-character hex timestamp prefix (good for ~2000 years)'
+\echo '- 8-character encoded timestamp prefix (millisecond precision)'
 \echo '- Compatible with existing nanoid alphabet and size parameters'
 \echo '- Timestamp extractable for debugging/analysis'
+\echo ''
+\echo 'SECURITY WARNING: Use regular nanoid() for better privacy.'
+\echo 'Only use nanoid_sortable() when time-ordering is essential.'

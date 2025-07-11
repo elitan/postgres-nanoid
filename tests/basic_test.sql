@@ -19,58 +19,45 @@ SELECT nanoid('cus_') as prefixed_nanoid;
 SELECT nanoid('test_', 25) as sized_nanoid;
 \echo ''
 
--- Test 4: Uniqueness and time-ordering test
-\echo 'Test 4: Uniqueness and time-ordering test (generating IDs with delays)'
-CREATE TEMP TABLE sortability_test (
+-- Test 4: Uniqueness test for random nanoids
+\echo 'Test 4: Uniqueness test (random nanoids should be unique)'
+CREATE TEMP TABLE uniqueness_test (
     seq INT,
     nanoid_value TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Insert with small delays to verify time ordering
-INSERT INTO sortability_test (seq, nanoid_value) VALUES (1, nanoid('test_'));
-SELECT pg_sleep(0.002);
-INSERT INTO sortability_test (seq, nanoid_value) VALUES (2, nanoid('test_'));
-SELECT pg_sleep(0.002);
-INSERT INTO sortability_test (seq, nanoid_value) VALUES (3, nanoid('test_'));
-SELECT pg_sleep(0.002);
-INSERT INTO sortability_test (seq, nanoid_value) VALUES (4, nanoid('test_'));
-SELECT pg_sleep(0.002);
-INSERT INTO sortability_test (seq, nanoid_value) VALUES (5, nanoid('test_'));
+-- Insert random nanoids (no time ordering expected)
+INSERT INTO uniqueness_test (seq, nanoid_value) VALUES (1, nanoid('test_'));
+INSERT INTO uniqueness_test (seq, nanoid_value) VALUES (2, nanoid('test_'));
+INSERT INTO uniqueness_test (seq, nanoid_value) VALUES (3, nanoid('test_'));
+INSERT INTO uniqueness_test (seq, nanoid_value) VALUES (4, nanoid('test_'));
+INSERT INTO uniqueness_test (seq, nanoid_value) VALUES (5, nanoid('test_'));
 
--- Show that nanoids are time-ordered when sorted lexicographically
+-- Show generated nanoids (order should be random)
 SELECT 
     seq,
     nanoid_value,
     created_at
-FROM sortability_test 
-ORDER BY nanoid_value;  -- Lexicographic order should match time order
+FROM uniqueness_test 
+ORDER BY seq;  -- Order by sequence, not nanoid
 
--- Verify sortability  
-WITH sorted_data AS (
-    SELECT 
-        seq,
-        LAG(seq) OVER (ORDER BY nanoid_value) as prev_seq
-    FROM sortability_test
-),
-sortability_check AS (
+-- Verify uniqueness (all should be unique)
+WITH uniqueness_check AS (
     SELECT 
         COUNT(*) as total_records,
-        COUNT(CASE 
-            WHEN prev_seq IS NULL OR prev_seq < seq 
-            THEN 1 
-        END) as correctly_sorted
-    FROM sorted_data
+        COUNT(DISTINCT nanoid_value) as unique_records
+    FROM uniqueness_test
 )
 SELECT 
     total_records,
-    correctly_sorted,
+    unique_records,
     CASE 
-        WHEN total_records = correctly_sorted 
-        THEN 'PASS - Nanoids are time-ordered!' 
-        ELSE 'FAIL - Time ordering broken' 
-    END as time_ordering_test
-FROM sortability_check;
+        WHEN total_records = unique_records 
+        THEN 'PASS - All nanoids are unique!' 
+        ELSE 'FAIL - Duplicate nanoids found' 
+    END as uniqueness_test
+FROM uniqueness_check;
 \echo ''
 
 -- Test 5: Insert into customers table
@@ -79,34 +66,33 @@ INSERT INTO customers (name) VALUES ('Test Customer 1'), ('Test Customer 2');
 SELECT public_id, name FROM customers ORDER BY public_id DESC LIMIT 2;
 \echo ''
 
--- Test 6: Timestamp extraction
-\echo 'Test 6: Timestamp extraction from nanoids'
+-- Test 6: Timestamp extraction (only works with sortable nanoids)
+\echo 'Test 6: Timestamp extraction (demo with sortable nanoid)'
 WITH timestamp_test AS (
     SELECT 
-        nanoid_value,
-        created_at,
-        nanoid_extract_timestamp(nanoid_value, 5) as extracted_timestamp  -- 5 = length of 'test_'
-    FROM sortability_test
-    LIMIT 1
+        nanoid_sortable('demo_') as sortable_nanoid,
+        NOW() as current_time
 )
 SELECT 
-    nanoid_value,
-    created_at,
-    extracted_timestamp,
+    sortable_nanoid,
+    current_time,
+    nanoid_extract_timestamp(sortable_nanoid, 5) as extracted_timestamp,  -- 5 = length of 'demo_'
     CASE 
-        WHEN abs(extract(epoch from created_at) - extract(epoch from extracted_timestamp)) < 1 
+        WHEN abs(extract(epoch from current_time) - extract(epoch from nanoid_extract_timestamp(sortable_nanoid, 5))) < 1 
         THEN 'PASS - Timestamp extraction accurate!' 
         ELSE 'FAIL - Timestamp mismatch' 
     END as timestamp_test
 FROM timestamp_test;
+
+\echo 'Note: Regular nanoid() IDs do not contain timestamps and cannot be extracted.'
 \echo ''
 
 -- Test 7: Error handling
 \echo 'Test 7: Error handling (should show error)'
-\echo 'Testing size too small with prefix and timestamp...'
+\echo 'Testing size too small with prefix...'
 DO $$
 BEGIN
-    PERFORM nanoid('very_long_prefix_', 5);
+    PERFORM nanoid('very_long_prefix_', 5);  -- Size 5 with long prefix should fail
     RAISE NOTICE 'ERROR: Should have failed!';
 EXCEPTION
     WHEN OTHERS THEN

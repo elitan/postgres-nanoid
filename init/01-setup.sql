@@ -1,4 +1,4 @@
--- Initialize the nanoid function
+-- Initialize the nanoid functions (dual approach: secure + sortable)
 -- This runs automatically when the container starts
 
 -- Create the pgcrypto extension
@@ -6,6 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Drop existing functions to ensure clean state
 DROP FUNCTION IF EXISTS nanoid CASCADE;
+DROP FUNCTION IF EXISTS nanoid_sortable CASCADE;
 DROP FUNCTION IF EXISTS nanoid_optimized CASCADE;
 DROP FUNCTION IF EXISTS nanoid_extract_timestamp CASCADE;
 
@@ -40,8 +41,10 @@ BEGIN
 END
 $$;
 
--- Main nanoid function with inline timestamp encoding
-CREATE OR REPLACE FUNCTION nanoid(
+-- Sortable nanoid function with timestamp encoding (use only if temporal ordering is required)
+-- WARNING: This function embeds timestamps in IDs, which can leak business intelligence
+-- and timing information. Use the regular nanoid() function for better security.
+CREATE OR REPLACE FUNCTION nanoid_sortable(
     prefix text DEFAULT '', 
     size int DEFAULT 21, 
     alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
@@ -122,7 +125,63 @@ BEGIN
 END
 $$;
 
--- Helper function to extract timestamp from nanoid (useful for debugging/analysis)
+-- Main nanoid function - purely random, secure by default
+CREATE OR REPLACE FUNCTION nanoid(
+    prefix text DEFAULT '', 
+    size int DEFAULT 21, 
+    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
+    additionalBytesFactor float DEFAULT 1.02
+)
+    RETURNS text
+    LANGUAGE plpgsql
+    VOLATILE LEAKPROOF PARALLEL SAFE
+    AS $$
+DECLARE
+    random_size int;
+    random_part text;
+    finalId text;
+    alphabetLength int;
+    mask int;
+    step int;
+BEGIN
+    -- Input validation
+    IF size IS NULL OR size < 1 THEN
+        RAISE EXCEPTION 'The size must be defined and greater than 0!';
+    END IF;
+    IF alphabet IS NULL OR length(alphabet) = 0 OR length(alphabet) > 255 THEN
+        RAISE EXCEPTION 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    END IF;
+    IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
+        RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
+    END IF;
+    
+    -- Calculate random part size (full size minus prefix)
+    random_size := size - length(prefix);
+    
+    IF random_size < 1 THEN
+        RAISE EXCEPTION 'The size must be larger than the prefix length! Need at least % characters.', length(prefix) + 1;
+    END IF;
+    
+    alphabetLength := length(alphabet);
+    
+    -- Generate purely random part using optimized function
+    mask := (2 << cast(floor(log(alphabetLength - 1) / log(2)) AS int)) - 1;
+    step := cast(ceil(additionalBytesFactor * mask * random_size / alphabetLength) AS int);
+    
+    IF step > 1024 THEN
+        step := 1024;
+    END IF;
+    
+    random_part := nanoid_optimized(random_size, alphabet, mask, step);
+    
+    -- Combine: prefix + random (no timestamp)
+    finalId := prefix || random_part;
+    
+    RETURN finalId;
+END
+$$;
+
+-- Helper function to extract timestamp from sortable nanoid (only works with nanoid_sortable)
 CREATE OR REPLACE FUNCTION nanoid_extract_timestamp(
     nanoid_value text, 
     prefix_length int DEFAULT 0,
@@ -171,5 +230,6 @@ CREATE TABLE IF NOT EXISTS customers (
 );
 
 -- Test that everything works
-SELECT 'Database initialized successfully. Testing nanoid function:' as status;
-SELECT nanoid('test_') as sample_nanoid;
+SELECT 'Database initialized successfully. Testing dual nanoid functions:' as status;
+SELECT nanoid('test_') as secure_random_nanoid;
+SELECT nanoid_sortable('test_') as sortable_nanoid;
