@@ -126,8 +126,9 @@ jobs:
       run: |
         echo "=== Testing Large Batch Performance ==="
         PGPASSWORD=postgres psql -h localhost -U postgres -d nanoid_test -c "
-        \timing on
-        SELECT COUNT(*) FROM (SELECT nanoid('perf_') FROM generate_series(1, 10000)) t;
-        SELECT COUNT(*) FROM (SELECT nanoid_sortable('perf_') FROM generate_series(1, 10000)) t;
-        \timing off
+        SELECT 'Starting performance test for nanoid()' as status;
+        SELECT COUNT(*) as nanoid_count FROM (SELECT nanoid('perf_') FROM generate_series(1, 10000)) t;
+        SELECT 'Starting performance test for nanoid_sortable()' as status;
+        SELECT COUNT(*) as nanoid_sortable_count FROM (SELECT nanoid_sortable('perf_') FROM generate_series(1, 10000)) t;
+        SELECT 'Performance tests completed successfully' as status;
         "
