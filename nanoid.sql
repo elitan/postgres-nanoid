@@ -30,7 +30,7 @@ DROP FUNCTION IF EXISTS nanoid_extract_timestamp CASCADE;
 CREATE OR REPLACE FUNCTION nanoid_optimized(size int, alphabet text, mask int, step int)
     RETURNS text
     LANGUAGE plpgsql
-    VOLATILE LEAKPROOF PARALLEL SAFE
+    VOLATILE PARALLEL SAFE
     AS $$
 DECLARE
     idBuilder text := '';
@@ -61,14 +61,14 @@ $$;
 -- WARNING: This function embeds timestamps in IDs, which can leak business intelligence
 -- and timing information. Use the regular nanoid() function for better security.
 CREATE OR REPLACE FUNCTION nanoid_sortable(
-    prefix text DEFAULT '', 
-    size int DEFAULT 21, 
-    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
+    prefix text DEFAULT '',
+    size int DEFAULT 21,
+    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
     additionalBytesFactor float DEFAULT 1.02
 )
     RETURNS text
     LANGUAGE plpgsql
-    VOLATILE LEAKPROOF PARALLEL SAFE
+    VOLATILE PARALLEL SAFE
     AS $$
 DECLARE
     timestamp_ms bigint;
@@ -143,14 +143,14 @@ $$;
 
 -- Main nanoid function - purely random, secure by default
 CREATE OR REPLACE FUNCTION nanoid(
-    prefix text DEFAULT '', 
-    size int DEFAULT 21, 
-    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
+    prefix text DEFAULT '',
+    size int DEFAULT 21,
+    alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
     additionalBytesFactor float DEFAULT 1.02
 )
     RETURNS text
     LANGUAGE plpgsql
-    VOLATILE LEAKPROOF PARALLEL SAFE
+    VOLATILE PARALLEL SAFE
     AS $$
 DECLARE
     random_size int;
@@ -199,13 +199,13 @@ $$;
 
 -- Helper function to extract timestamp from sortable nanoid (only works with nanoid_sortable)
 CREATE OR REPLACE FUNCTION nanoid_extract_timestamp(
-    nanoid_value text, 
+    nanoid_value text,
     prefix_length int DEFAULT 0,
     alphabet text DEFAULT '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 )
     RETURNS timestamp
     LANGUAGE plpgsql
-    IMMUTABLE LEAKPROOF PARALLEL SAFE
+    IMMUTABLE PARALLEL SAFE
     AS $$
 DECLARE
     timestamp_encoded text;
