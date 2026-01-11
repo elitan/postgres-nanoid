@@ -38,7 +38,7 @@ DECLARE
     bytes bytea;
     alphabetIndex int;
     alphabetArray text[];
-    alphabetLength int := 64;
+    alphabetLength int;
 BEGIN
     alphabetArray := regexp_split_to_array(alphabet, '');
     alphabetLength := array_length(alphabetArray, 1);
@@ -87,8 +87,8 @@ BEGIN
     IF size IS NULL OR size < 1 THEN
         RAISE EXCEPTION 'The size must be defined and greater than 0!';
     END IF;
-    IF alphabet IS NULL OR length(alphabet) = 0 OR length(alphabet) > 255 THEN
-        RAISE EXCEPTION 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    IF alphabet IS NULL OR length(alphabet) < 2 OR length(alphabet) > 255 THEN
+        RAISE EXCEPTION 'The alphabet must be between 2 and 255 symbols!';
     END IF;
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
         RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
@@ -124,7 +124,7 @@ BEGIN
         RAISE EXCEPTION 'The size including prefix and timestamp must leave room for random component! Need at least % characters.', length(prefix) + 9;
     END IF;
     
-    -- Generate random part using optimized function
+    -- Bitmask for efficient rejection sampling: smallest (2^n - 1) >= alphabetLength
     mask := (2 << cast(floor(log(alphabetLength - 1) / log(2)) AS int)) - 1;
     step := cast(ceil(additionalBytesFactor * mask * random_size / alphabetLength) AS int);
     
@@ -164,8 +164,8 @@ BEGIN
     IF size IS NULL OR size < 1 THEN
         RAISE EXCEPTION 'The size must be defined and greater than 0!';
     END IF;
-    IF alphabet IS NULL OR length(alphabet) = 0 OR length(alphabet) > 255 THEN
-        RAISE EXCEPTION 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    IF alphabet IS NULL OR length(alphabet) < 2 OR length(alphabet) > 255 THEN
+        RAISE EXCEPTION 'The alphabet must be between 2 and 255 symbols!';
     END IF;
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
         RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
@@ -180,7 +180,7 @@ BEGIN
     
     alphabetLength := length(alphabet);
     
-    -- Generate purely random part using optimized function
+    -- Bitmask for efficient rejection sampling: smallest (2^n - 1) >= alphabetLength
     mask := (2 << cast(floor(log(alphabetLength - 1) / log(2)) AS int)) - 1;
     step := cast(ceil(additionalBytesFactor * mask * random_size / alphabetLength) AS int);
     
