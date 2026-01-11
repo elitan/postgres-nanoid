@@ -25,7 +25,7 @@ DECLARE
     bytes bytea;
     alphabetIndex int;
     alphabetArray text[];
-    alphabetLength int := 64;
+    alphabetLength int;
 BEGIN
     alphabetArray := regexp_split_to_array(alphabet, '');
     alphabetLength := array_length(alphabetArray, 1);
@@ -66,8 +66,8 @@ BEGIN
     IF size IS NULL OR size < 1 THEN
         RAISE EXCEPTION 'The size must be defined and greater than 0!';
     END IF;
-    IF alphabet IS NULL OR length(alphabet) = 0 OR length(alphabet) > 255 THEN
-        RAISE EXCEPTION 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    IF alphabet IS NULL OR length(alphabet) < 2 OR length(alphabet) > 255 THEN
+        RAISE EXCEPTION 'The alphabet must be between 2 and 255 symbols!';
     END IF;
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
         RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
@@ -179,6 +179,10 @@ CREATE TABLE orders (
 
 **Size calculation:** Default size 21 with prefix `cus_` (4 chars) = 17 random characters
 
+**Tips:**
+- `UNIQUE` on `public_id` is enough - no extra index needed
+- CHECK constraints with regex are fast, use them for prefix validation
+
 ### Batch generation
 
 ```sql
@@ -195,7 +199,7 @@ SELECT id, name FROM batch_ids;
 
 - `prefix` (text, default `''`) - String prepended to ID
 - `size` (int, default `21`) - Total length including prefix
-- `alphabet` (text, default `'0-9a-zA-Z'`) - 62-char alphabet
+- `alphabet` (text, default `0-9a-zA-Z`) - 62 URL-safe chars, must be 2-255 chars
 - `additionalBytesFactor` (float, default `1.02`) - Buffer multiplier for efficiency
 
 ### Custom alphabets
@@ -251,8 +255,8 @@ BEGIN
     IF size IS NULL OR size < 1 THEN
         RAISE EXCEPTION 'The size must be defined and greater than 0!';
     END IF;
-    IF alphabet IS NULL OR length(alphabet) = 0 OR length(alphabet) > 255 THEN
-        RAISE EXCEPTION 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    IF alphabet IS NULL OR length(alphabet) < 2 OR length(alphabet) > 255 THEN
+        RAISE EXCEPTION 'The alphabet must be between 2 and 255 symbols!';
     END IF;
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
         RAISE EXCEPTION 'The additional bytes factor can''t be less than 1!';
